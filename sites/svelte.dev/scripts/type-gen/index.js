@@ -1,5 +1,5 @@
 // @ts-check
-import { mkdir, readFile, writeFile } from 'node:fs/promises';
+import { mkdir, readFile, stat, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import prettier from 'prettier';
 import ts from 'typescript';
@@ -233,11 +233,29 @@ function strip_origin(str) {
 	return str.replace(/https:\/\/svelte\.dev/g, '');
 }
 
+/** @param {string} start_path */
+async function find_nearest_node_modules(start_path) {
+	try {
+		if (await stat(path.join(start_path, 'node_modules'))) {
+			return path.resolve(start_path, 'node_modules');
+		}
+	} catch {
+		const parentDir = path.dirname(start_path);
+
+		if (start_path === parentDir) {
+			return null;
+		}
+
+		return find_nearest_node_modules(parentDir);
+	}
+}
+
 /**
  * @param {string} file
  */
 async function read_d_ts_file(file) {
-	const resolved = path.resolve('../../packages/svelte', file);
+	const nearest_node_modules = await find_nearest_node_modules('.');
+	const resolved = path.resolve(`${nearest_node_modules}/svelte`, file);
 
 	// We can't use JSDoc comments inside JSDoc, so we would get ts(7031) errors if
 	// we didn't ignore this error specifically for `/// file:` code examples
