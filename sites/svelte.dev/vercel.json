@@ -3,5 +3,6 @@
 	"github": {
 		"silent": true
 	},
+	"installCommand": "pnpm install --frozen-lockfile",
 	"buildCommand": "pnpm build"
 }
